@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CompaeAudioAnalyzer — Demo</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      background: #0d0a16;
+      color: #f0f6fd;
+      font-family: monospace;
+    }
+    button {
+      padding: 10px 24px;
+      font-family: monospace;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: #f0f6fd;
+      background: #855999;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { background: #be7bc0; }
+    button:disabled { opacity: 0.4; cursor: default; }
+
+    #bars { display: flex; gap: 16px; align-items: flex-end; height: 160px; }
+    .bar-col { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 60px; }
+    .bar-track { width: 100%; height: 140px; background: rgba(255,255,255,0.08); border-radius: 6px; display: flex; align-items: flex-end; overflow: hidden; }
+    .bar-fill { width: 100%; height: 0%; transition: height 0.05s linear; }
+    .bar-fill.bass  { background: #855999; }
+    .bar-fill.mids  { background: #e1a4d3; }
+    .bar-fill.highs { background: #76eee9; }
+    .bar-fill.kick  { background: #be7bc0; }
+    .bar-label { font-size: 11px; letter-spacing: 1px; color: rgba(240,246,253,0.6); }
+
+    #hint { font-size: 11px; color: rgba(240,246,253,0.35); text-align: center; }
+  </style>
+</head>
+<body>
+
+  <button id="startBtn">Activar micrófono</button>
+
+  <div id="bars">
+    <div class="bar-col">
+      <div class="bar-track"><div class="bar-fill bass" id="barBass"></div></div>
+      <span class="bar-label">BASS</span>
+    </div>
+    <div class="bar-col">
+      <div class="bar-track"><div class="bar-fill mids" id="barMids"></div></div>
+      <span class="bar-label">MIDS</span>
+    </div>
+    <div class="bar-col">
+      <div class="bar-track"><div class="bar-fill highs" id="barHighs"></div></div>
+      <span class="bar-label">HIGHS</span>
+    </div>
+    <div class="bar-col">
+      <div class="bar-track"><div class="bar-fill kick" id="barKick"></div></div>
+      <span class="bar-label">KICK</span>
+    </div>
+  </div>
+
+  <div id="hint">Pulsa [A] para abrir el panel de monitorización avanzado</div>
+
+  <script src="CompaeAudioAnalyzer.js"></script>
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const barBass  = document.getElementById('barBass');
+    const barMids  = document.getElementById('barMids');
+    const barHighs = document.getElementById('barHighs');
+    const barKick  = document.getElementById('barKick');
+
+    let running = false;
+
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      startBtn.textContent = 'Conectando…';
+      const ok = await CompaeAudioAnalyzer.start({ sensitivity: 0.55, cooldown: 15 });
+      if (ok) {
+        startBtn.textContent = 'Escuchando';
+        running = true;
+        requestAnimationFrame(loop);
+      } else {
+        startBtn.disabled = false;
+        startBtn.textContent = 'Reintentar (permiso denegado?)';
+      }
+    });
+
+    function loop() {
+      if (!running) return;
+      const { bass, mids, highs, kick } = CompaeAudioAnalyzer.get(0.15);
+      barBass.style.height  = (bass  * 100).toFixed(1) + '%';
+      barMids.style.height  = (mids  * 100).toFixed(1) + '%';
+      barHighs.style.height = (highs * 100).toFixed(1) + '%';
+      barKick.style.height  = kick ? '100%' : '0%';
+      requestAnimationFrame(loop);
+    }
+  </script>
+</body>
+</html>
